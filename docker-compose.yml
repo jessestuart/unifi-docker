@@ -1,27 +1,31 @@
-version: '2.2'
+version: '3.0'
+
 services:
+
+  # =====================
+  # Mongo -- data backend
+  # =====================
   mongo:
     image: mongo:3.4
     container_name: ${COMPOSE_PROJECT_NAME}_mongo
-    networks:
-      - unifi
     restart: always
     volumes:
-      - db:/data/db
+      - /unifi/db:/data/db
+
+  # =====================================
+  # Packaged controller `.deb` from Unifi
+  # =====================================
   controller:
-    image: "jacobalberty/unifi:${TAG:-latest}"
+    image: "jacobalberty/unifi:5.12.66-arm32v7"
     container_name: ${COMPOSE_PROJECT_NAME}_controller
     depends_on:
       - mongo
-    init: true
-    networks:
-      - unifi
     restart: always
     volumes:
-      - data:/unifi/data
-      - log:/unifi/log
-      - cert:/unifi/cert
-      - init:/unifi/init.d
+      - /unifi/data:/unifi/data
+      - /unifi/log:/unifi/log
+      - /unifi/cert:/unifi/cert
+      - /unifi/init:/unifi/init.d
     environment:
       DB_URI: mongodb://mongo/unifi
       STATDB_URI: mongodb://mongo/unifi_stat
@@ -34,6 +38,7 @@ services:
       - "8880:8880/tcp" # HTTP portal redirection
       - "8843:8843/tcp" # HTTPS portal redirection
       - "10001:10001/udp" # AP discovery
+
   logs:
     image: bash
     container_name: ${COMPOSE_PROJECT_NAME}_logs
@@ -42,14 +47,4 @@ services:
     command: bash -c 'tail -F /unifi/log/*.log'
     restart: always
     volumes:
-      - log:/unifi/log
-
-volumes:
-  db:
-  data:
-  log:
-  cert:
-  init:
-
-networks:
-  unifi:
+      - /unifi/log:/unifi/log
